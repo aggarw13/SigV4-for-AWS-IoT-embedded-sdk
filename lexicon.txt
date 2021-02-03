@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 accesskeyid
 accesskeylen
@@ -9,24 +10,52 @@ api
 apr
 ascii
 authbuflen
+=======
+accesskeyid
+accesskeyidlen
+addtodate
+addtogroup
+aggregator
+algorithmlen
+amz
+apr
+ascii
+auth
+authbuflen
+authorizaton
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 aws
 br
 bufferlen
 bufremaining
 canonicalrequest
 canonicalurilen
+<<<<<<< HEAD
 cbmc
 chunked
 com
 config
 const
+=======
+chunked
+com
+config
+completehashandhexencode
+const
+constness
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 copydoc
 datalen
 datelen
 dd
 deconstructed
 defgroup
+<<<<<<< HEAD
 encodeonce
+=======
+doubleencodeequals
+encodetwice
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 encodeslash
 endif
 enums
@@ -37,17 +66,31 @@ formatlen
 github
 gmt
 gr
+<<<<<<< HEAD
+=======
+hashblocklen
+hashdigestlen
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 hashfinal
 hashinit
 hashupdate
 headercount
 headerindex
 headerlen
+<<<<<<< HEAD
 headersdatalen
+=======
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 headerslen
 hh
 hhmmss
 hmac
+<<<<<<< HEAD
+=======
+hmacdata
+hmacfinal
+hmackey
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 html
 http
 httpmethodlen
@@ -57,13 +100,27 @@ ifndef
 inc
 ingroup
 inputlen
+<<<<<<< HEAD
+=======
+ipad
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 iot
 iso
 jan
 january
+<<<<<<< HEAD
 leninput
 lentoread
 lv
+=======
+keylen
+ksecret
+leninput
+lentoread
+linelen
+lv
+maclen
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 mainpage
 min
 misra
@@ -72,20 +129,41 @@ mon
 monthsperday
 noninfringement
 nullterminate
+<<<<<<< HEAD
+=======
+opad
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 ored
 org
 outputlen
 paccesskeyid
+<<<<<<< HEAD
 param
 pathlen
 pauthbuf
+=======
+palgorithm
+param
+pathlen
+pauthbuf
+pauthprefixlen
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 payloadlen
 pbufcur
 pbuffer
 pbufloc
 pbufprocessing
+<<<<<<< HEAD
 pcanonicaluri
 pcredscope
+=======
+pbufstart
+pbytesremaining
+pcanonicalcontext
+pcanonicaluri
+pcredscope
+pcryptointerface
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 pdata
 pdate
 pdateelements
@@ -96,13 +174,27 @@ phashcontext
 pheaders
 pheadersloc
 phexoutput
+<<<<<<< HEAD
 phttpmethod
 pinput
 pinputstr
+=======
+phmaccontext
+phttpmethod
+pinput
+pinputstr
+pkey
+pline
+pmac
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 posix
 poutput
 poutputexpected
 poutputleapexpected
+<<<<<<< HEAD
+=======
+poutputlen
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 pparams
 ppath
 ppayload
@@ -114,6 +206,12 @@ psecretaccesskey
 psecuritytoken
 pservice
 psignature
+<<<<<<< HEAD
+=======
+psignedheaders
+psignedheaderslen
+psigningkey
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 ptestformatfailure
 puri
 qsort
@@ -122,6 +220,11 @@ rande
 readloc
 regionlen
 rfc
+<<<<<<< HEAD
+=======
+trimmedlen
+trimmedlength
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 sdk
 sec
 secretaccesskey
@@ -132,21 +235,37 @@ sep
 servicelen
 sha
 signaturelen
+<<<<<<< HEAD
+=======
+signedheaders
+signedheaderslen
+signingkey
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 sizeof
 snprintf
 ss
 sscanf
+<<<<<<< HEAD
 standalone
 strftime
+=======
+strftime
+stringtosign
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 struct
 structs
 sts
 subfolder
 sublicense
 thu
+<<<<<<< HEAD
 trimmable
 trimmedlength
 tm
+=======
+tm
+trimmedlen
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 tue
 txt
 un
@@ -155,5 +274,10 @@ urilen
 url
 utc
 vallen
+<<<<<<< HEAD
+=======
+xor
+xy
+>>>>>>> bf7559c (SigV4_GenerateHTTPAuthorization Implementation)
 yyyy
 yyyymmdd
