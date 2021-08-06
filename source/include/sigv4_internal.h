@@ -142,14 +142,25 @@ typedef struct SigV4String
 } SigV4String_t;
 
 /**
+ * @brief A library structure holding the string and length values of parameters to
+ * be sorted and standardized. This allows for a layer of abstraction during the
+ * canonicalization step of the V4 signing process.
+ */
+typedef struct SigV4ConstString
+{
+    const char * pData;   /**< SigV4 string data */
+    size_t dataLen; /**< Length of pData */
+} SigV4ConstString_t;
+
+/**
  * @brief A key-value pair data structure that allows for sorting of SigV4
  * string values using internal comparison functions, and provides additional
  * stability to qSort(), to comply with Misra rule 21.9.
  */
 typedef struct SigV4KeyValuePair
 {
-    SigV4String_t key;   /**< SigV4 string identifier */
-    SigV4String_t value; /**< SigV4 data */
+    SigV4ConstString_t key;   /**< SigV4 string identifier */
+    SigV4ConstString_t value; /**< SigV4 data */
 } SigV4KeyValuePair_t;
 
 typedef SigV4KeyValuePair_t SigV4Header_t; /**< SigV4 header representation */
