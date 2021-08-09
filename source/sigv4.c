@@ -132,10 +132,7 @@ static void intToAscii( int32_t value,
  * @brief Extract all header key-value pairs from the passed headers data and add them
  * to the canonical request.
  *
- * @param[in] pHeaders HTTP headers to canonicalize.
- * @param[in] headersLen Length of HTTP headers to canonicalize.
- * @param[in] flags Flag to indicate if headers are already
- * in the canonical form.
+ * @param[in] pHttpParameters HTTP headers to canonicalize.
  * @param[out] canonicalRequest Struct to maintain intermediary buffer
  * and state of canonicalization.
  * @param[out] pSignedHeaders The starting location of the signed headers.
@@ -148,9 +145,9 @@ static void intToAscii( int32_t value,
  * #SigV4MaxHeaderPairCountExceeded if number of headers that needs to be canonicalized
  * exceed the SIGV4_MAX_HTTP_HEADER_COUNT macro defined in the config file.
  */
-static SigV4Status_t generateCanonicalAndSignedHeaders( const char * pHeaders,
-                                                        size_t headersLen,
-                                                        uint32_t flags,
+static SigV4Status_t generateCanonicalAndSignedHeaders( const SigV4HttpParameters_t * pHttpParameters,
+                                                        const char * pService,
+                                                        size_t serviceLen,
                                                         CanonicalContext_t * canonicalRequest,
                                                         char ** pSignedHeaders,
                                                         size_t * pSignedHeadersLen );
@@ -209,6 +206,8 @@ static SigV4Status_t appendCanonicalizedHeaders( size_t headerCount,
 static SigV4Status_t parseHeaderKeyValueEntries( const char * pHeaders,
                                                  size_t headersDataLen,
                                                  uint32_t flags,
+                                                 const char * pService,
+                                                 size_t serviceLen,
                                                  size_t * headerCount,
                                                  CanonicalContext_t * canonicalRequest );
 
@@ -621,6 +620,16 @@ static SigV4Status_t lowercaseHexEncode( const SigV4String_t * pInputStr,
  * @return Number of bytes needed for credential scope.
  */
 static size_t sizeNeededForCredentialScope( const SigV4Parameters_t * pSigV4Params );
+
+static bool isRequestForAWSS3( const char * pService,
+                               size_t serviceLen )
+{
+    assert( pService != NULL );
+    assert( serviceLen > 0 );
+
+    return( ( serviceLen == S3_SERVICE_NAME_LEN ) &&
+            ( strncmp( pService, S3_SERVICE_NAME, S3_SERVICE_NAME_LEN ) == 0 ) );
+}
 
 /*-----------------------------------------------------------*/
 
@@ -1531,6 +1540,8 @@ static SigV4Status_t generateCredentialScope( const SigV4Parameters_t * pSigV4Pa
     static SigV4Status_t parseHeaderKeyValueEntries( const char * pHeaders,
                                                      size_t headersDataLen,
                                                      uint32_t flags,
+                                                     const char * pService,
+                                                     size_t serviceLen,
                                                      size_t * headerCount,
                                                      CanonicalContext_t * canonicalRequest )
     {
@@ -1538,6 +1549,12 @@ static SigV4Status_t generateCredentialScope( const SigV4Parameters_t * pSigV4Pa
         const char * pKeyOrValStartLoc;
         const char * pCurrLoc;
         bool keyFlag = true;
+
+        /* If AWS S3 is the service for HTTP request, then the S3_REQUIRED_HEADER_NAME
+         * header should be present in the headers list. */
+        bool isServiceS3 = isRequestForAWSS3( pService, serviceLen );
+        bool foundS3RequiredHeader = true;
+        size_t keyLen = 0U;
         SigV4Status_t sigV4Status = SigV4Success;
 
         assert( pHeaders != NULL );
@@ -1561,6 +1578,17 @@ static SigV4Status_t generateCredentialScope( const SigV4Parameters_t * pSigV4Pa
             {
                 canonicalRequest->pHeadersLoc[ noOfHeaders ].key.pData = pKeyOrValStartLoc;
                 canonicalRequest->pHeadersLoc[ noOfHeaders ].key.dataLen = ( pCurrLoc - pKeyOrValStartLoc );
+                keyLen = canonicalRequest->pHeadersLoc[ noOfHeaders ].key.dataLen;
+
+                /* If the HTTP request is being made to AWS S3 service, then it look for the required
+                 * S3_REQUIRED_HEADER_NAME header in the list of headers. */
+                if( isServiceS3 && ( keyLen == S3_REQUIRED_HEADER_NAME_LEN ) &&
+                    ( strncmp( pKeyOrValStartLoc, S3_REQUIRED_HEADER_NAME, keyLen ) ) )
+                {
+                    /* Set flag to indicate that the payload hash HTTP header has been found. */
+                    foundS3RequiredHeader = true;
+                }
+
                 pKeyOrValStartLoc = pCurrLoc + 1U;
                 keyFlag = false;
             }
@@ -1587,6 +1615,16 @@ static SigV4Status_t generateCredentialScope( const SigV4Parameters_t * pSigV4Pa
                 noOfHeaders++;
             }
 
+            /* Extract the header value of S3_REQUIRED_HEADER_NAME_LEN header key that is required when
+             * making request to AWS S3 service. The header value represents the request payloads hash.
+             * By extracting the hashed payload data, the hashing of the request payload is avoided for creating
+             * the Canonical Request. */
+            if( !keyFlag && foundS3RequiredHeader )
+            {
+                canonicalRequest->pPayloadHashLoc = canonicalRequest->pHeadersLoc[ noOfHeaders ].value.pData;
+                canonicalRequest->payloadHashLen = canonicalRequest->pHeadersLoc[ noOfHeaders ].value.dataLen = ( pCurrLoc - pKeyOrValStartLoc );
+            }
+
             pCurrLoc++;
         }
 
@@ -1600,24 +1638,30 @@ static SigV4Status_t generateCredentialScope( const SigV4Parameters_t * pSigV4Pa
 
 /*-----------------------------------------------------------*/
 
-    static SigV4Status_t generateCanonicalAndSignedHeaders( const char * pHeaders,
-                                                            size_t headersLen,
-                                                            uint32_t flags,
+    static SigV4Status_t generateCanonicalAndSignedHeaders( const SigV4HttpParameters_t * pHttpParameters,
+                                                            const char * pService,
+                                                            size_t serviceLen,
                                                             CanonicalContext_t * canonicalRequest,
                                                             char ** pSignedHeaders,
                                                             size_t * pSignedHeadersLen )
     {
         size_t noOfHeaders = 0;
         SigV4Status_t sigV4Status = SigV4Success;
+        const char * pHeaders = pHttpParameters->pHeaders;
+        size_t headersLen = pHttpParameters->headersLen;
+        uint32_t flags = pHttpParameters->flags;
 
         assert( pHeaders != NULL );
         assert( canonicalRequest != NULL );
         assert( canonicalRequest->pBufCur != NULL );
+        assert( ( pService != NULL ) && ( serviceLen > 0U ) );
 
         /* Parsing header string to extract key and value. */
         sigV4Status = parseHeaderKeyValueEntries( pHeaders,
                                                   headersLen,
                                                   flags,
+                                                  pService,
+                                                  serviceLen,
                                                   &noOfHeaders,
                                                   canonicalRequest );
 
@@ -2369,10 +2413,10 @@ static SigV4Status_t writeStringToSign( const SigV4Parameters_t * pParams,
     SigV4Status_t returnStatus = SigV4Success;
     size_t encodedLen = pCanonicalContext->bufRemaining;
     char * pBufStart = ( char * ) pCanonicalContext->pBufProcessing;
- 
-    assert(pParams!= NULL);
-    assert((pAlgorithm!= NULL) && (algorithmLen > 0));
-    assert(pCanonicalContext!= NULL); 
+
+    assert( pParams != NULL );
+    assert( ( pAlgorithm != NULL ) && ( algorithmLen > 0 ) );
+    assert( pCanonicalContext != NULL );
 
     returnStatus = completeHashAndHexEncode( pBufStart,
                                              ( size_t ) ( pCanonicalContext->pBufCur - pBufStart ),
@@ -2471,8 +2515,7 @@ static SigV4Status_t generateCanonicalRequestUntilHeaders( const SigV4Parameters
                                                         pathLen,
                                                         pCanonicalContext );
         }
-        else if( ( pParams->serviceLen == S3_SERVICE_NAME_LEN ) &&
-                 ( strncmp( pParams->pService, S3_SERVICE_NAME, S3_SERVICE_NAME_LEN ) == 0 ) )
+        else if( isRequestForAWSS3( pParams->pService, pParams->serviceLen ) )
         {
             /* S3 is the only service in which the URI must only be encoded once. */
             returnStatus = generateCanonicalURI( pPath, pathLen,
@@ -2517,9 +2560,9 @@ static SigV4Status_t generateCanonicalRequestUntilHeaders( const SigV4Parameters
     if( returnStatus == SigV4Success )
     {
         /* Canonicalize original HTTP headers before writing to buffer. */
-        returnStatus = generateCanonicalAndSignedHeaders( pParams->pHttpParameters->pHeaders,
-                                                          pParams->pHttpParameters->headersLen,
-                                                          pParams->pHttpParameters->flags,
+        returnStatus = generateCanonicalAndSignedHeaders( pParams->pHttpParameters,
+                                                          pParams->pService,
+                                                          pParams->serviceLen,
                                                           pCanonicalContext,
                                                           pSignedHeaders,
                                                           pSignedHeadersLen );
@@ -2844,12 +2887,22 @@ SigV4Status_t SigV4_GenerateHTTPAuthorization( const SigV4Parameters_t * pParams
     /* Hash and hex-encode the canonical request to the buffer. */
     if( returnStatus == SigV4Success )
     {
-        encodedLen = canonicalContext.bufRemaining;
-        returnStatus = completeHashAndHexEncode( pParams->pHttpParameters->pPayload,
-                                                 pParams->pHttpParameters->payloadLen,
-                                                 canonicalContext.pBufCur,
-                                                 &encodedLen,
-                                                 pParams->pCryptoInterface );
+        if( canonicalContext.pPayloadHashLoc == NULL )
+        {
+            encodedLen = canonicalContext.bufRemaining;
+            returnStatus = completeHashAndHexEncode( pParams->pHttpParameters->pPayload,
+                                                     pParams->pHttpParameters->payloadLen,
+                                                     canonicalContext.pBufCur,
+                                                     &encodedLen,
+                                                     pParams->pCryptoInterface );
+        }
+        else
+        {
+            assert( canonicalContext.payloadHashLen == pParams->pCryptoInterface->hashDigestLen );
+
+            /* Copy the hashed payload data supplied by the user in the headers data list. */
+            memcpy( canonicalContext.pBufCur, canonicalContext.pPayloadHashLoc, pParams->pCryptoInterface->hashDigestLen );
+        }
     }
 
     /* Write string to sign. */

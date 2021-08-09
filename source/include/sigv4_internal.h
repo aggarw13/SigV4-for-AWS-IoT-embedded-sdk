@@ -94,8 +94,11 @@
 #define SPACE_CHAR                             ' '                                              /**< A linefeed character used to build the Authorization header value. */
 #define SPACE_CHAR_LEN                         1U                                               /**< The length of #SPACE_CHAR. */
 
-#define S3_SERVICE_NAME                        "s3"                                             /**< S3 is the only service where the URI must only be encoded once. */
+#define S3_SERVICE_NAME                        "s3"                                             /**< AWS S3 is the only service where the URI must only be encoded once. */
 #define S3_SERVICE_NAME_LEN                    ( sizeof( S3_SERVICE_NAME ) - 1U )               /**< The length of #S3_SERVICE_NAME. */
+
+#define S3_REQUIRED_HEADER_NAME                "x-amz-content-sha256"                           /**< AWS S3 requires this header to be present in the HTTP request and the SigV4 signature. */
+#define S3_REQUIRED_HEADER_NAME_LEN            ( sizeof( S3_REQUIRED_HEADER_NAME ) - 1U )       /**< The length of #S3_REQUIRED_HEADER_NAME. */
 
 #define SIGV4_HMAC_SIGNING_KEY_PREFIX          "AWS4"                                           /**< HMAC signing key prefix. */
 #define SIGV4_HMAC_SIGNING_KEY_PREFIX_LEN      ( sizeof( SIGV4_HMAC_SIGNING_KEY_PREFIX ) - 1U ) /**< The length of #SIGV4_HMAC_SIGNING_KEY_PREFIX. */
@@ -176,10 +179,12 @@ typedef struct CanonicalContext
 {
     SigV4KeyValuePair_t pQueryLoc[ SIGV4_MAX_QUERY_PAIR_COUNT ];    /**< Query pointers used during sorting. */
     SigV4KeyValuePair_t pHeadersLoc[ SIGV4_MAX_HTTP_HEADER_COUNT ]; /**< Header pointers used during sorting. */
+    const char * pPayloadHashLoc;                                         /** < The location of the HTTP request payload's hash in the parsed headers, when connecting to AWS S3. */
+    size_t payloadHashLen;
 
-    uint8_t pBufProcessing[ SIGV4_PROCESSING_BUFFER_LENGTH ];       /**< Internal calculation buffer used during canonicalization. */
-    char * pBufCur;                                                 /**< pBufProcessing cursor. */
-    size_t bufRemaining;                                            /**< pBufProcessing value used during internal calculation. */
+    uint8_t pBufProcessing[ SIGV4_PROCESSING_BUFFER_LENGTH ]; /**< Internal calculation buffer used during canonicalization. */
+    char * pBufCur;                                           /**< pBufProcessing cursor. */
+    size_t bufRemaining;                                      /**< pBufProcessing value used during internal calculation. */
 } CanonicalContext_t;
 
 /**
